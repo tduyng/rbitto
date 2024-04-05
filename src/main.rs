@@ -1,15 +1,25 @@
 use bittorrent_starter_rust::cli::decode::decode_bencoded_value;
-use std::env;
+use clap::{Parser, Subcommand};
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about=None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand, Debug)]
+enum Command {
+    Decode { data: String },
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let command = &args[1];
+    let args = Cli::parse();
 
-    if command == "decode" {
-        let encoded_value = &args[2];
-        let decoded_value = decode_bencoded_value(encoded_value);
-        println!("{}", decoded_value);
-    } else {
-        println!("unknown command: {}", args[1])
+    match args.command {
+        Command::Decode { data } => {
+            let decoded_value = decode_bencoded_value(&data);
+            println!("{}", decoded_value);
+        }
     }
 }
