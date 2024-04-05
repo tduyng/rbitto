@@ -14,7 +14,7 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Command {
     Decode { data: String },
-    Info {file: PathBuf}
+    Info { path: PathBuf },
 }
 
 fn main() -> Result<()> {
@@ -22,6 +22,6 @@ fn main() -> Result<()> {
 
     match args.command {
         Command::Decode { data } => Commands::decode(&data),
-        Command::Info { file } => Commands::info(file),
+        Command::Info { path } => Commands::info(path),
     }
 }
