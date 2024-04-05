@@ -1,4 +1,5 @@
-use bittorrent_starter_rust::cli::decode::decode_bencoded_value;
+use anyhow::Result;
+use bittorrent_starter_rust::cli::Commands;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -13,13 +14,10 @@ enum Command {
     Decode { data: String },
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Command::Decode { data } => {
-            let decoded_value = decode_bencoded_value(&data);
-            println!("{}", decoded_value);
-        }
+        Command::Decode { data } => Commands::decode(&data)
     }
 }
