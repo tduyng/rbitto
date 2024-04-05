@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bittorrent_starter_rust::cli::Commands;
+use bittorrent_starter_rust::commands::Commands;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -18,6 +18,6 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Command::Decode { data } => Commands::decode(&data)
+        Command::Decode { data } => Commands::decode(&data),
     }
 }
