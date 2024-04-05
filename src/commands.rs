@@ -16,6 +16,11 @@ impl Commands {
         println!("Tracker URL: {}", torrent.announce);
         println!("Length: {}", torrent.info.length);
         println!("Info Hash: {}", torrent.info_hash()?);
+        println!("Piece Length: {}", torrent.info.piece_length);
+        println!("Piece Hashes:");
+        for hash in torrent.piece_hashes()? {
+            println!("{}", hash);
+        }
         Ok(())
     }
 }

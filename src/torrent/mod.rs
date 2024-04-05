@@ -1,8 +1,8 @@
-use std::{fs::File, io::Read};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 use sha1::{Digest, Sha1};
+use std::{fs::File, io::Read};
 
 #[derive(Debug, Deserialize)]
 pub struct Torrent {
@@ -23,7 +23,7 @@ impl Torrent {
     pub fn from_file(path: &str) -> Result<Torrent> {
         let mut buffet = Vec::new();
         File::open(path)?.read_to_end(&mut buffet)?;
-        
+
         Ok(serde_bencode::from_bytes(&buffet)?)
     }
 
@@ -31,7 +31,16 @@ impl Torrent {
         let mut hasher = Sha1::new();
         let info_bytes = serde_bencode::to_bytes(&self.info)?;
         hasher.update(&info_bytes);
-        
+
         Ok(format!("{:x}", hasher.finalize()))
+    }
+
+    pub fn piece_hashes(&self) -> Result<Vec<String>> {
+        let piece_hashes = self.info.pieces[..]
+            .chunks(20)
+            .map(hex::encode)
+            .collect::<Vec<String>>();
+
+        Ok(piece_hashes)
     }
 }
