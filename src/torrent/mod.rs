@@ -1,6 +1,7 @@
-use std::{fs::File, io::Read, path::PathBuf};
+use std::{fs::File, io::Read};
 use anyhow::Result;
-use serde::{self, Deserialize};
+use serde::Deserialize;
+use serde_bytes::ByteBuf;
 
 #[derive(Debug, Deserialize)]
 pub struct Torrent {
@@ -14,14 +15,14 @@ pub struct Info {
     pub length: u64,
     #[serde(rename = "piece length")]
     pub piece_length: u64,
-    pub pieces: String,
+    pub pieces: ByteBuf,
 }
 
 impl Torrent {
-    pub fn from_file(path: PathBuf) -> Result<Torrent> {
+    pub fn from_file(path: &str) -> Result<Torrent> {
         let mut buffet = Vec::new();
         File::open(path)?.read_to_end(&mut buffet)?;
-
+        
         Ok(serde_bencode::from_bytes(&buffet)?)
     }
 }

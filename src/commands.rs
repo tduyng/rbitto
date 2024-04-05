@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use crate::{torrent::Torrent, utils};
 use anyhow::Result;
 
@@ -13,7 +11,7 @@ impl Commands {
         Ok(())
     }
 
-    pub fn info(path: PathBuf) -> Result<()> {
+    pub fn info(path: &str) -> Result<()> {
         let torrent = Torrent::from_file(path)?;
         println!("Tracker URL: {}", torrent.announce);
         println!("Length: {}", torrent.info.length);
