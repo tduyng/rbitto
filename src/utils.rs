@@ -20,7 +20,7 @@ pub fn decode(encoded_value: &str) -> Value {
 
 fn decode_inner(encoded_value: &str) -> (Value, &str) {
     let regex_digit = Regex::new(r"^(\d+):(.+)$").unwrap();
-    let regex_integer = Regex::new(r"^i(-?\d+)e$").unwrap();
+    let regex_integer = Regex::new(r"^i(-?\d+)e").unwrap();
 
     match encoded_value {
         encoded if regex_digit.is_match(encoded) => {
@@ -33,9 +33,13 @@ fn decode_inner(encoded_value: &str) -> (Value, &str) {
             )
         }
         encoded if regex_integer.is_match(encoded) => {
-            let captures = regex_integer.captures(encoded).unwrap();
-            let number = captures[1].parse::<i64>().unwrap();
-            (Value::Number(Number::from(number)), "")
+            let number_end = encoded.find('e').unwrap();
+            let number = &encoded[1..number_end];
+            let parsed_number = number.parse::<i64>().unwrap();
+            (
+                Value::Number(Number::from(parsed_number)),
+                &encoded[number_end + 1..],
+            )
         }
         _ => panic!("Unhandled encoded value: {}", encoded_value),
     }
