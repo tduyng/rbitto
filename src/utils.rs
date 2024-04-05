@@ -17,8 +17,17 @@ fn decode_inner(encoded_value: serde_bencode::value::Value) -> Result<Value> {
                 .collect::<anyhow::Result<Vec<serde_json::Value>>>()?;
             Ok(Value::Array(array))
         }
-        _ => {
-            panic!("Unhandled encoded value: {:?}", encoded_value)
+        serde_bencode::value::Value::Dict(d) => {
+            let object = d
+                .into_iter()
+                .map(|(k, v)| {
+                    let key = String::from_utf8(k)?;
+                    let value = decode_inner(v)?;
+                    Ok((key, value))
+                })
+                .collect::<Result<serde_json::Map<String, serde_json::Value>>>()?;
+
+            Ok(Value::Object(object))
         }
     }
 }
