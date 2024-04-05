@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use bittorrent_starter_rust::commands::Commands;
 use clap::{Parser, Subcommand};
@@ -12,6 +14,7 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Command {
     Decode { data: String },
+    Info {file: PathBuf}
 }
 
 fn main() -> Result<()> {
@@ -19,5 +22,6 @@ fn main() -> Result<()> {
 
     match args.command {
         Command::Decode { data } => Commands::decode(&data),
+        Command::Info { file } => Commands::info(file),
     }
 }

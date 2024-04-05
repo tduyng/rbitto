@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::utils;
 use anyhow::Result;
 
@@ -8,6 +10,11 @@ impl Commands {
         let decoded_value = utils::decode(data)?;
 
         println!("{}", decoded_value);
+        Ok(())
+    }
+    pub fn info(file: PathBuf) -> Result<()> {
+
+        println!("Info file: {:?}", file);
         Ok(())
     }
 }
