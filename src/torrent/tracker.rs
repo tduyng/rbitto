@@ -23,7 +23,26 @@ pub struct TrackerResponse {
 pub struct Tracker {}
 
 impl Tracker {
-    pub async fn get_peers(path: &str) -> Result<ByteBuf> {
+    pub async fn get_peers(path: &str) -> Result<Vec<String>> {
+        let peers = Self::get_peers_bytes_buf(path).await?;
+        let mut addresses = Vec::new();
+
+        for chunk in peers.chunks_exact(6) {
+            let address = format!(
+                "{}.{}.{}.{}:{}",
+                chunk[0],
+                chunk[1],
+                chunk[2],
+                chunk[3],
+                ((chunk[4] as u16) << 8 | chunk[5] as u16)
+            );
+            addresses.push(address);
+        }
+
+        Ok(addresses)
+    }
+
+    async fn get_peers_bytes_buf(path: &str) -> Result<ByteBuf> {
         let torrent = Torrent::from_file(path)?;
         let info_hash = torrent.info_hash()?;
 

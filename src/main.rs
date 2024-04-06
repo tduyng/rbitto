@@ -30,7 +30,7 @@ enum Command {
         #[arg(short, long)]
         output: String,
         path: String,
-        piece_index: usize,
+        piece_index: u32,
     },
 }
 
@@ -49,6 +49,6 @@ async fn main() -> Result<()> {
             output,
             path,
             piece_index,
-        } => Commands::download_piece(&output, &path, &piece_index).await,
+        } => Commands::download_piece(&output, &path, piece_index).await,
     }
 }

@@ -3,7 +3,7 @@ use crate::{
     utils,
 };
 use anyhow::{Ok, Result};
-use serde_bytes::ByteBuf;
+use tokio::fs;
 
 pub struct Commands {}
 
@@ -32,18 +32,11 @@ impl Commands {
     }
 
     pub async fn peers(path: &str) -> Result<()> {
-        let peers: ByteBuf = Tracker::get_peers(path).await?;
+        let peers = Tracker::get_peers(path).await?;
 
         println!("Peers:");
-        for chunk in peers.chunks_exact(6) {
-            println!(
-                "{}.{}.{}.{}:{}",
-                chunk[0],
-                chunk[1],
-                chunk[2],
-                chunk[3],
-                ((chunk[4] as u16) << 8 | chunk[5] as u16)
-            );
+        for address in peers {
+            println!("{}", address);
         }
 
         Ok(())
@@ -62,9 +55,28 @@ impl Commands {
         Ok(())
     }
 
-    pub async fn download_piece(output: &str, path: &str, piece_index: &usize) -> Result<()> {
-        println!("Download piece: {} {} {}", output, path, piece_index);
+    pub async fn download_piece(output: &str, path: &str, piece_index: u32) -> Result<()> {
+        let torrent = Torrent::from_file(path)?;
+        let info_hash = torrent.info_hash()?;
+        let peers = Tracker::get_peers(path).await?;
+        let mut stream = Stream::connect(&peers[0]).await?;
+        let handshake = HandShake::new(info_hash);
+        stream.handshake(handshake).await?;
+        stream.bitfield().await?;
+        stream.interested().await?;
+        stream.wait_unchoke().await?;
 
+        let piece_data: Vec<u8> = stream.get_piece_data(piece_index, &torrent).await?;
+        // let mut hasher = <Sha1 as Digest>::new();
+        // hasher.update(&piece_data);
+        // let piece_hash: [u8; 20] = hasher.finalize().into();
+
+        // let torrent_hash = &torrent.info.pieces.0[piece_index as usize];
+        // if &piece_hash != torrent_hash {
+        //     panic!("Hashes do NOT match!");
+        // }
+
+        fs::write(output, &piece_data).await?;
         Ok(())
     }
 }
