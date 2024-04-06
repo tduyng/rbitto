@@ -31,3 +31,12 @@ fn decode_inner(encoded_value: serde_bencode::value::Value) -> Result<Value> {
         }
     }
 }
+
+pub fn urlencode(bytes: &[u8; 20]) -> String {
+    let mut encoded = String::with_capacity(3 * bytes.len());
+    for &byte in bytes {
+        encoded.push('%');
+        encoded.push_str(&hex::encode([byte]));
+    }
+    encoded
+}

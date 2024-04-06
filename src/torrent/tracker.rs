@@ -32,7 +32,6 @@ pub struct Tracker {}
 impl Tracker {
     pub fn get_peers(request: TrackerRequest) -> Result<Vec<String>> {
         let request_params = serde_urlencoded::to_string([
-            ("info_hash", &request.info_hash),
             ("peer_id", &request.peer_id),
             ("port", &request.port.to_string()),
             ("downloaded", &request.downloaded.to_string()),
@@ -41,7 +40,7 @@ impl Tracker {
             ("compact", &request.compact.to_string()),
         ])?;
 
-        let request_url = format!("{}?{}", request.tracker_url, request_params);
+        let request_url = format!("{}?info_hash={}&{}", request.tracker_url, request.info_hash , request_params);
 
         let response = reqwest::blocking::get(request_url)?.json::<TrackerResponse>()?;
         Ok(response.peers)

@@ -32,12 +32,12 @@ impl Torrent {
         Ok(serde_bencode::from_bytes(&buffet)?)
     }
 
-    pub fn info_hash(&self) -> Result<String> {
-        let mut hasher = Sha1::new();
+    pub fn info_hash(&self) -> Result<[u8; 20]> {
         let info_bytes = serde_bencode::to_bytes(&self.info)?;
+        let mut hasher = Sha1::new();
         hasher.update(&info_bytes);
 
-        Ok(format!("{:x}", hasher.finalize()))
+        Ok(hasher.finalize().into())
     }
 
     pub fn piece_hashes(&self) -> Result<Vec<String>> {
