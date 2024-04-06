@@ -1,5 +1,5 @@
 use crate::{
-    torrent::{Network, Torrent, Tracker},
+    torrent::{HandShake, Stream, Torrent, Tracker, HANDSHAKE_BUF_INDEX_START},
     utils,
 };
 use anyhow::{Ok, Result};
@@ -50,12 +50,15 @@ impl Commands {
     }
 
     pub async fn handshake(path: &str, peer_address: &str) -> Result<()> {
-        let parts: Vec<&str> = peer_address.split(':').collect();
-        let peer_ip = parts[0];
-        let peer_port: u16 = parts[1].parse()?;
+        let torrent = Torrent::from_file(path)?;
+        let info_hash = torrent.info_hash()?;
+        let handshake = HandShake::new(info_hash);
+        let mut stream = Stream::connect(peer_address).await?;
+        let response = stream.handshake(handshake).await?;
+        let peer_id = &response[HANDSHAKE_BUF_INDEX_START..];
+        let peer_id_hex = hex::encode(peer_id);
 
-        let _ = Network::handshake(path, peer_ip, peer_port).await;
-
+        println!("Peer ID: {}", peer_id_hex);
         Ok(())
     }
 
