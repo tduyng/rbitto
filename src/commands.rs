@@ -80,4 +80,10 @@ impl Commands {
 
         Ok(())
     }
+
+    pub async fn download_piece(output: &str, path: &str, piece_index: &usize) -> Result<()>{
+        println!("Download piece: {} {} {}", output, path, piece_index);
+
+        Ok(())
+    }
 }
