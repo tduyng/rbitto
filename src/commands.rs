@@ -1,7 +1,8 @@
 use crate::{
-    torrent::{Torrent, Tracker}, utils,
+    torrent::{Torrent, Tracker},
+    utils,
 };
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use serde_bytes::ByteBuf;
 
 pub struct Commands {}
@@ -32,11 +33,19 @@ impl Commands {
 
     pub async fn peers(path: &str) -> Result<()> {
         let peers: ByteBuf = Tracker::get_peers(path).await?;
-        
+
         println!("Peers:");
-        for peer in peers {
-            println!("{}", peer);
+        for chunk in peers.chunks_exact(6) {
+            println!(
+                "{}.{}.{}.{}:{}",
+                chunk[0],
+                chunk[1],
+                chunk[2],
+                chunk[3],
+                ((chunk[4] as u16) << 8 | chunk[5] as u16)
+            );
         }
+
         Ok(())
     }
 }
