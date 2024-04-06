@@ -4,6 +4,11 @@ use serde_bytes::ByteBuf;
 use sha1::{Digest, Sha1};
 use std::{fs::File, io::Read};
 
+/* Export modules */
+pub mod tracker;
+pub use tracker::*;
+
+/* Start of code */
 #[derive(Debug, Deserialize)]
 pub struct Torrent {
     pub announce: String,

@@ -13,7 +13,7 @@ struct Cli {
 enum Command {
     Decode { data: String },
     Info { path: String },
-    Peers {path: String }
+    Peers { path: String },
 }
 
 fn main() -> Result<()> {

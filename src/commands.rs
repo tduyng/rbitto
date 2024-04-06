@@ -1,4 +1,7 @@
-use crate::{torrent::Torrent, utils};
+use crate::{
+    torrent::{Torrent, Tracker, TrackerRequest},
+    utils,
+};
 use anyhow::Result;
 
 pub struct Commands {}
@@ -25,7 +28,24 @@ impl Commands {
     }
 
     pub fn peers(path: &str) -> Result<()> {
-        println!("Peers {}", path);
+        let torrent = Torrent::from_file(path)?;
+        
+        let request = TrackerRequest {
+            tracker_url: torrent.announce.clone(),
+            info_hash: torrent.info_hash()?,
+            peer_id: "00112233445566778899".to_string(),
+            port: 6881,
+            uploaded: 0,
+            downloaded: 0,
+            left: torrent.info.length,
+            compact: 1,
+        };
+        let peers = Tracker::get_peers(request)?;
+
+        println!("Peers:");
+        for peer in peers {
+            println!("{}", peer);
+        }
         Ok(())
     }
 }
