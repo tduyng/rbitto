@@ -30,15 +30,9 @@ impl Commands {
         Ok(())
     }
 
-    pub fn peers(path: &str) -> Result<()> {
+    pub async fn peers(path: &str) -> Result<()> {
         let torrent = Torrent::from_file(path)?;
         let info_hash = torrent.info_hash()?;
-
-        // Ensure that the length of the byte slice is 20
-        if info_hash.len() != 20 {
-            return Err(anyhow::anyhow!("info_hash length is not 20 bytes"));
-        }
-
         let info_hash_encoded = urlencode(&info_hash);
 
         let request = TrackerRequest {
@@ -51,7 +45,7 @@ impl Commands {
             left: torrent.info.length,
             compact: 1,
         };
-        let peers = Tracker::get_peers(request)?;
+        let peers = Tracker::get_peers(request).await?;
 
         println!("Peers:");
         for peer in peers {

@@ -16,12 +16,13 @@ enum Command {
     Peers { path: String },
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
         Command::Decode { data } => Commands::decode(&data),
         Command::Info { path } => Commands::info(&path),
-        Command::Peers { path } => Commands::peers(&path),
+        Command::Peers { path } => Commands::peers(&path).await,
     }
 }
