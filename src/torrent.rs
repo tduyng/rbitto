@@ -5,7 +5,9 @@ use sha1::{Digest, Sha1};
 use std::{fs::File, io::Read};
 
 /* Export modules */
-pub mod tracker;
+mod network;
+mod tracker;
+pub use network::*;
 pub use tracker::*;
 
 /* Start of code */

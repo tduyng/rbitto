@@ -26,12 +26,12 @@ enum Command {
         peer_address: String,
     },
     #[clap(name = "download_piece")]
-    DownloadPiece{
+    DownloadPiece {
         #[arg(short, long)]
         output: String,
         path: String,
-        piece_index: usize
-    }
+        piece_index: usize,
+    },
 }
 
 #[tokio::main]
@@ -45,8 +45,10 @@ async fn main() -> Result<()> {
         Command::HandShake { path, peer_address } => {
             Commands::handshake(&path, &peer_address).await
         }
-        Command::DownloadPiece { output, path, piece_index } => {
-            Commands::download_piece(&output, &path, &piece_index).await
-        }
+        Command::DownloadPiece {
+            output,
+            path,
+            piece_index,
+        } => Commands::download_piece(&output, &path, &piece_index).await,
     }
 }
