@@ -48,4 +48,13 @@ impl Commands {
 
         Ok(())
     }
+
+    pub async fn handshake(path: &str, peer_address: &str) -> Result<()> {
+        let parts: Vec<&str> = peer_address.split(':').collect();
+        let peer_ip = parts[0];
+        let peer_port: u16 = parts[1].parse()?;
+        println!("Handshake from path:{} with ip:{} and port:{}", path, peer_ip,peer_port );
+
+        Ok(())
+    }
 }

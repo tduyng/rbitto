@@ -14,6 +14,11 @@ enum Command {
     Decode { data: String },
     Info { path: String },
     Peers { path: String },
+    #[clap(name = "handshake")]
+    HandShake {
+        path: String,
+        peer_address: String
+    }
 }
 
 #[tokio::main]
@@ -24,5 +29,6 @@ async fn main() -> Result<()> {
         Command::Decode { data } => Commands::decode(&data),
         Command::Info { path } => Commands::info(&path),
         Command::Peers { path } => Commands::peers(&path).await,
+        Command::HandShake { path, peer_address } => Commands::handshake(&path, &peer_address).await,
     }
 }
