@@ -1,6 +1,5 @@
 use crate::{
-    torrent::{Torrent, Tracker, TrackerRequest},
-    utils::{self, urlencode},
+    torrent::{Torrent, Tracker}, utils,
 };
 use anyhow::Result;
 
@@ -31,21 +30,7 @@ impl Commands {
     }
 
     pub async fn peers(path: &str) -> Result<()> {
-        let torrent = Torrent::from_file(path)?;
-        let info_hash = torrent.info_hash()?;
-        let info_hash_encoded = urlencode(&info_hash);
-
-        let request = TrackerRequest {
-            tracker_url: torrent.announce.clone(),
-            info_hash: info_hash_encoded,
-            peer_id: "00112233445566778899".to_string(),
-            port: 6881,
-            uploaded: 0,
-            downloaded: 0,
-            left: torrent.info.length,
-            compact: 1,
-        };
-        let peers = Tracker::get_peers(request).await?;
+        let peers = Tracker::get_peers(path).await?;
 
         println!("Peers:");
         for peer in peers {
