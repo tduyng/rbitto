@@ -13,6 +13,7 @@ struct Cli {
 enum Command {
     Decode { data: String },
     Info { path: String },
+    Peers {path: String }
 }
 
 fn main() -> Result<()> {
@@ -21,5 +22,6 @@ fn main() -> Result<()> {
     match args.command {
         Command::Decode { data } => Commands::decode(&data),
         Command::Info { path } => Commands::info(&path),
+        Command::Peers { path } => Commands::peers(&path),
     }
 }

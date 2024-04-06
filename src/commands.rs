@@ -23,4 +23,9 @@ impl Commands {
         }
         Ok(())
     }
+
+    pub fn peers(path: &str) -> Result<()> {
+        println!("Peers {}", path);
+        Ok(())
+    }
 }
