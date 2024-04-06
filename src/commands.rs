@@ -2,6 +2,7 @@ use crate::{
     torrent::{Torrent, Tracker}, utils,
 };
 use anyhow::Result;
+use serde_bytes::ByteBuf;
 
 pub struct Commands {}
 
@@ -30,8 +31,8 @@ impl Commands {
     }
 
     pub async fn peers(path: &str) -> Result<()> {
-        let peers = Tracker::get_peers(path).await?;
-
+        let peers: ByteBuf = Tracker::get_peers(path).await?;
+        
         println!("Peers:");
         for peer in peers {
             println!("{}", peer);

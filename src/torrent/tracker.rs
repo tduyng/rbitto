@@ -2,35 +2,28 @@ use super::Torrent;
 use crate::utils::urlencode;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::fmt::{Display, Formatter};
+use serde_bytes::ByteBuf;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct TrackerRequest {
     pub peer_id: String,
     pub port: u16,
-    pub uploaded: u16,
-    pub downloaded: u64,
-    pub left: u64,
-    pub compact: u64,
+    pub uploaded: usize,
+    pub downloaded: usize,
+    pub left: usize,
+    pub compact: u8,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct TrackerResponse {
     pub interval: i64,
-    pub peers: Vec<String>,
-}
-
-impl Display for TrackerResponse {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "Peers:\n{}", self.peers.join("\n"))
-    }
+    pub peers: ByteBuf,
 }
 
 pub struct Tracker {}
 
 impl Tracker {
-    pub async fn get_peers(path: &str) -> Result<Vec<String>> {
+    pub async fn get_peers(path: &str) -> Result<ByteBuf> {
         let torrent = Torrent::from_file(path)?;
         let info_hash = torrent.info_hash()?;
 
@@ -46,7 +39,9 @@ impl Tracker {
 
         let request_url = format!(
             "{}?{}&info_hash={}",
-            torrent.announce, request_params, &urlencode(&info_hash)
+            torrent.announce,
+            request_params,
+            &urlencode(&info_hash)
         );
         let res = reqwest::get(request_url).await?.bytes().await?;
         let tracker_res = serde_bencode::from_bytes::<TrackerResponse>(&res)?;

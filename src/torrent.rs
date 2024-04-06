@@ -18,9 +18,9 @@ pub struct Torrent {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Info {
     pub name: String,
-    pub length: u64,
+    pub length: usize,
     #[serde(rename = "piece length")]
-    pub piece_length: u64,
+    pub piece_length: usize,
     pub pieces: ByteBuf,
 }
 
