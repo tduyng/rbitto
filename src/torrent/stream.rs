@@ -1,5 +1,5 @@
 use super::{HandShake, Torrent, HANDSHAKE_BUF_SIZE};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use std::time::Duration;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -13,15 +13,23 @@ pub struct Stream {
 
 impl Stream {
     pub async fn connect(peer_address: &str) -> Result<Self> {
-        let connection = TcpStream::connect(peer_address).await?;
+        let connection = TcpStream::connect(peer_address).await.context(format!(
+            "Ctx: stream connection failed to peer address: {peer_address}"
+        ))?;
         Ok(Self { connection })
     }
 
     pub async fn handshake(&mut self, handshake: HandShake) -> Result<[u8; HANDSHAKE_BUF_SIZE]> {
-        self.connection.write_all(&handshake.as_bytes()).await?;
+        self.connection
+            .write_all(&handshake.as_bytes())
+            .await
+            .context("Ctx: write handshake bytes failed")?;
 
         let mut buf = [0u8; HANDSHAKE_BUF_SIZE];
-        self.connection.read_exact(&mut buf).await?;
+        self.connection
+            .read_exact(&mut buf)
+            .await
+            .context("Ctx: read handshake bytes failed")?;
 
         Ok(buf)
     }
@@ -29,7 +37,10 @@ impl Stream {
     pub async fn bitfield(&mut self) -> Result<()> {
         let length = self.message_length().await?;
         let mut buf = vec![0u8; length as usize];
-        self.connection.read_exact(&mut buf).await?;
+        self.connection
+            .read_exact(&mut buf)
+            .await
+            .context("Ctx: read bitfield buffer failed")?;
 
         match MessageType::from_id(buf[0]) {
             Some(MessageType::Bitfield) => Ok(()),
@@ -41,7 +52,10 @@ impl Stream {
         let mut interested = [0u8; 5];
         interested[3] = 1;
         interested[4] = MessageType::Interested.id();
-        self.connection.write_all(&interested).await?;
+        self.connection
+            .write_all(&interested)
+            .await
+            .context("Ctx: write interested buffer failed")?;
         Ok(())
     }
 
@@ -49,7 +63,11 @@ impl Stream {
         let mut data = Vec::new();
         let mut block_index: u32 = 0;
         let mut block_size: u32 = 16 * 1024;
-        let mut remaining_bytes: u32 = if piece == torrent.info.pieces.len() as u32 - 1 {
+
+        println!("Debug: info.pieces.len: {}", torrent.info.pieces.len());
+        println!("Debug: piece_length: {}", torrent.info.piece_length);
+
+        let mut remaining_bytes: u32 = if piece == (torrent.info.pieces.len() / 20) as u32 - 1 {
             (torrent.info.length as u32) % (torrent.info.piece_length as u32)
         } else {
             torrent.info.piece_length as u32
@@ -62,7 +80,10 @@ impl Stream {
 
             self.send_request_piece(piece, block_index, block_size)
                 .await?;
-            let request_buf = self.read_request_piece().await?;
+            let request_buf = self
+                .read_request_piece()
+                .await
+                .context("Ctx: Reading request piece")?;
 
             let mut piece_data_index = [0u8; 4];
             piece_data_index.copy_from_slice(&request_buf[1..5]);
@@ -102,14 +123,20 @@ impl Stream {
         request_piece_buf[5..9].copy_from_slice(&piece.to_be_bytes());
         request_piece_buf[9..13].copy_from_slice(&block_index.to_be_bytes());
         request_piece_buf[13..17].copy_from_slice(&block_size.to_be_bytes());
-        self.connection.write_all(&request_piece_buf).await?;
+        self.connection
+            .write_all(&request_piece_buf)
+            .await
+            .context("Ctx: send request piece")?;
         Ok(())
     }
 
     async fn read_request_piece(&mut self) -> Result<Vec<u8>> {
         let length = self.message_length().await?;
         let mut request_buf = vec![0; length as usize];
-        self.connection.read_exact(&mut request_buf).await?;
+        self.connection
+            .read_exact(&mut request_buf)
+            .await
+            .context("Ctx: request piece buf")?;
 
         if request_buf[0] != MessageType::Piece.id() {
             panic!("expected request piece");
@@ -120,13 +147,18 @@ impl Stream {
 
     async fn message_length(&mut self) -> Result<u32> {
         let mut length_buf = [0u8; 4];
-        self.connection.read_exact(&mut length_buf).await?;
+        self.connection
+            .read_exact(&mut length_buf)
+            .await
+            .context("Ctx: read length buffer")?;
         let length = u32::from_be_bytes(length_buf);
         Ok(length)
     }
 
     async fn timeout(&mut self, buffer: &mut [u8], timeout_duration: Duration) -> Result<()> {
-        let _ = timeout(timeout_duration, self.connection.read_exact(buffer)).await?;
+        let _ = timeout(timeout_duration, self.connection.read_exact(buffer))
+            .await
+            .context("Ctx: read operation timed out")??;
         Ok(())
     }
 }
@@ -171,6 +203,31 @@ impl MessageType {
             7 => Some(MessageType::Piece),
             8 => Some(MessageType::Cancel),
             _ => None,
+        }
+    }
+
+    pub fn get_write_buffer<F>(&self, get_values: F) -> Vec<u8>
+    where
+        F: Fn() -> (u32, u32, u32),
+    {
+        match self {
+            MessageType::Interested => {
+                let mut buf = [0u8; 5];
+                buf[3] = 1;
+                buf[4] = MessageType::Interested.id();
+                buf.to_vec()
+            }
+            MessageType::Request => {
+                let (piece, block_index, block_size) = get_values();
+                let mut buf = [0u8; 17];
+                buf[0..4].copy_from_slice(&13u32.to_be_bytes()); // Message length: 13
+                buf[4] = MessageType::Request.id(); // Message ID: 6 (request)
+                buf[5..9].copy_from_slice(&piece.to_be_bytes()); // Piece index
+                buf[9..13].copy_from_slice(&block_index.to_be_bytes()); // Offset
+                buf[13..17].copy_from_slice(&block_size.to_be_bytes()); // Length
+                buf.to_vec()
+            }
+            _ => Vec::new(),
         }
     }
 }
