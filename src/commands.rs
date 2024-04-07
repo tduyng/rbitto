@@ -91,4 +91,9 @@ impl Commands {
 
         Ok(())
     }
+
+    pub async fn download(output: &str, path: &str) -> Result<()>{
+        println!("Ouput {}; path: {}", output, path);
+        Ok(())
+    }
 }
