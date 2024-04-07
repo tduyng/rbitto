@@ -3,6 +3,7 @@ use crate::{
     utils,
 };
 use anyhow::{Ok, Result};
+use sha1::{Digest, Sha1};
 use tokio::fs;
 
 pub struct Commands {}
@@ -67,14 +68,19 @@ impl Commands {
         stream.wait_unchoke().await?;
 
         let piece_data: Vec<u8> = stream.get_piece_data(piece_index, &torrent).await?;
-        // let mut hasher = <Sha1 as Digest>::new();
-        // hasher.update(&piece_data);
-        // let piece_hash: [u8; 20] = hasher.finalize().into();
+        let mut hasher = <Sha1 as Digest>::new();
+        hasher.update(&piece_data);
+        let piece_hash: [u8; 20] = hasher.finalize().into();
 
-        // let torrent_hash = &torrent.info.pieces.0[piece_index as usize];
-        // if &piece_hash != torrent_hash {
-        //     panic!("Hashes do NOT match!");
-        // }
+        let torrent_hashes = &torrent.info.pieces[..];
+        let piece_hash_index = (piece_index * 20) as usize;
+
+        // Extract the relevant portion of the torrent hash
+        let mut torrent_hash: [u8; 20] = [0; 20];
+        torrent_hash.copy_from_slice(&torrent_hashes[piece_hash_index..piece_hash_index + 20]);
+        if piece_hash != torrent_hash {
+            panic!("Hashes do NOT match!");
+        }
 
         fs::write(output, &piece_data).await?;
         Ok(())
