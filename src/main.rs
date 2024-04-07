@@ -36,7 +36,7 @@ enum Command {
         #[arg(short, long)]
         output: String,
         path: String,
-    }
+    },
 }
 
 #[tokio::main]
@@ -55,6 +55,6 @@ async fn main() -> Result<()> {
             path,
             piece_index,
         } => Commands::download_piece(&output, &path, piece_index).await,
-        Command::Download { output, path } => Commands::download(&output, &path).await
+        Command::Download { output, path } => Commands::download(&output, &path).await,
     }
 }

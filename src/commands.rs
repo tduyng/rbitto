@@ -1,10 +1,10 @@
-use std::fs;
 use crate::{
     torrent::{HandShake, Stream, Torrent, Tracker, HANDSHAKE_BUF_INDEX_START},
     utils,
 };
 use anyhow::{Context, Ok, Result};
 use sha1::{Digest, Sha1};
+use std::fs;
 
 pub struct Commands {}
 
@@ -60,19 +60,54 @@ impl Commands {
         let torrent = Torrent::from_file(path)?;
         let info_hash = torrent.info_hash()?;
         let peers = Tracker::get_peers(path).await?;
-        println!("Debug: Peers: {:?}", peers[0]);
-        let mut stream = Stream::connect(&peers[0]).await?;
+        let peer_address = &peers[0];
+        let piece_data =
+            Self::process_download_piece_data(&torrent, info_hash, peer_address, piece_index)
+                .await?;
+
+        fs::write(output, piece_data).context("Ctx: write piece data failed!")?;
+
+        Ok(())
+    }
+
+    pub async fn download(output: &str, path: &str) -> Result<()> {
+        let torrent = Torrent::from_file(path)?;
+        let info_hash = torrent.info_hash()?;
+        let peers = Tracker::get_peers(path).await?;
+        let peer_address = &peers[0];
+
+        let mut file_data: Vec<u8> = Vec::new();
+        for piece_index in 0..(torrent.info.pieces.len() / 20) {
+            let piece_data = Self::process_download_piece_data(
+                &torrent,
+                info_hash,
+                peer_address,
+                piece_index as u32,
+            )
+            .await
+            .context("Ctx: process piece data failed!")?;
+            file_data.extend(piece_data);
+        }
+
+        fs::write(output, file_data).context("Ctx: write piece data failed!")?;
+
+        Ok(())
+    }
+
+    async fn process_download_piece_data(
+        torrent: &Torrent,
+        info_hash: [u8; 20],
+        peer_address: &str,
+        piece_index: u32,
+    ) -> Result<Vec<u8>> {
+        let mut stream = Stream::connect(peer_address).await?;
         let handshake = HandShake::new(info_hash);
         stream.handshake(handshake).await?;
-        println!("Debug: Handshake executed!");
         stream.bitfield().await?;
-        println!("Debug: Bitfield executed!");
         stream.interested().await?;
-        println!("Debug: Interested executed!");
         stream.wait_unchoke().await?;
-        println!("Debug: await_unchoke excuted!");
 
-        let piece_data: Vec<u8> = stream.get_piece_data(piece_index, &torrent).await?;
+        let piece_data: Vec<u8> = stream.get_piece_data(piece_index, torrent).await?;
         let mut hasher = <Sha1 as Digest>::new();
         hasher.update(&piece_data);
         let piece_hash: [u8; 20] = hasher.finalize().into();
@@ -87,13 +122,6 @@ impl Commands {
             panic!("Hashes do NOT match!");
         }
 
-        fs::write(output, piece_data).context("Ctx: write piece data failed!")?;
-
-        Ok(())
-    }
-
-    pub async fn download(output: &str, path: &str) -> Result<()>{
-        println!("Ouput {}; path: {}", output, path);
-        Ok(())
+        Ok(piece_data)
     }
 }
