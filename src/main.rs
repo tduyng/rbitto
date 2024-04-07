@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bittorrent_starter_rust::commands::Commands;
+use rbitto::commands::Commands;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
